@@ -1,17 +1,10 @@
-from flask import Flask, jsonify, request
 import pymongo
+from flask import Flask, jsonify, request
 from bson import ObjectId
 from datetime import datetime, timedelta
-import pytz
 
-client = pymongo.MongoClient("mongodb+srv://administrador:administrador@cluster0.8vjnvh9.mongodb.net/test")
+client = pymongo.MongoClient("mongodb+srv://administrador:administrador@economax.wa1uot6.mongodb.net/test")    
 db = client['Economax']
-
-def dataNow():
-    fuso_horario_brasilia = pytz.timezone('America/Sao_Paulo')
-    data_hora_atual_brasilia = datetime.now(fuso_horario_brasilia)
-    data_hora_formatada = data_hora_atual_brasilia.strftime("%Y-%m-%d %H:%M:%S")
-    return data_hora_formatada
 
 def cadastro(user_crypt, password_crypt):    
     try:
@@ -55,12 +48,10 @@ def categorias_despesas_geral():
         return {'Message': 'Um erro ocorreu!', 'Descrição': str(ex)}
 
 def cadastro_categorias(nome_categoria, usuario_id):
-    data_hora_formatada = dataNow()
-    
     if db.categorias_despesas_geral.count_documents({'nome': nome_categoria}) > 0:
         return {'message': 'Categoria já está cadastrada!'}
 
-    categoria = {'nome': nome_categoria, 'users_id': usuario_id, 'data': data_hora_formatada}
+    categoria = {'nome': nome_categoria, 'users_id': usuario_id, 'data': datetime.now().strftime("%d-%m-%Y %H:%M:%S")}
     categoria_id = db.categorias_despesas_geral.insert_one(categoria).inserted_id
     
     categoria_criada = db.categorias_despesas_geral.find_one({'_id': categoria_id}, {'_id': 1, 'nome': 1})
@@ -102,22 +93,21 @@ def busca_categorias_despesas_geral_usuario(user_id):
     return jsonify(categorias)
 
 def cadastro_gastos_usuario(registros_gastos, usuario_id):
-    gastos = db.gastos    
-    data_hora_formatada = dataNow()
+    gastos = db.gastos
     
     for registro in registros_gastos:
      
         categoria_id = registro['id_categoria'].lower()
         valor = registro['valor']
         
-        novo_gasto = {'categoria_despesa_id': categoria_id, 'usuario_id': usuario_id, 'valor': valor, 'data': data_hora_formatada}
+        novo_gasto = {'categoria_despesa_id': categoria_id, 'usuario_id': usuario_id, 'valor': valor, 'data': datetime.now().strftime("%d-%m-%Y %H:%M:%S")}
 
         gasto_id = gastos.insert_one(novo_gasto)
         
     return {'message': 'Gastos inseridos com sucesso!'}
     
 def ultimas_despesas_usuario(dias, users_id):
-    gastos = db.gastos.find({'usuario_id': users_id})    
+    gastos = db.gastos.find({'usuario_id': users_id})
     resultado = []
     for gasto in gastos:
         categoria_id = gasto['categoria_despesa_id']
@@ -127,13 +117,13 @@ def ultimas_despesas_usuario(dias, users_id):
             'valor': gasto['valor'].replace(',', ''),
             'data': gasto['data']
         })
-    # ajustar
+    
     data_atual = datetime.now()
     data_limite = datetime(data_atual.year, data_atual.month, data_atual.day, 0, 0, 0) - timedelta(days=int(dias))
-    lista_filtrada = []
 
+    lista_filtrada = []
     for item in resultado:
-        data_item = datetime.strptime(item['data'], '%Y-%m-%d %H:%M:%S')
+        data_item = datetime.strptime(item['data'], '%d-%m-%Y %H:%M:%S')
         if data_item >= data_limite:
             lista_filtrada.append(item)
 
