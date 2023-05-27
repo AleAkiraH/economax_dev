@@ -87,11 +87,22 @@ def ultimas_despesas_usuario():
     usuario_id = request.json['id_usuario'].lower()
     dias = request.json['dias']
     return funcoes.ultimas_despesas_usuario(dias, usuario_id)
-    
+
+@app.route('/ultimas_rendimentos_usuario', methods=['POST'])
+def ultimas_rendimentos_usuario():
+    usuario_id = request.json['id_usuario'].lower()
+    dias = request.json['dias']
+    return funcoes.ultimas_rendimentos_usuario(dias, usuario_id)
+   
 @app.route('/ultimas_despesas_usuario_mes_atual_sintetico', methods=['POST'])
 def ultimas_despesas_usuario_mes_atual_sintetico():
     usuario_id = request.json['id_usuario'].lower()
     return funcoes.ultimas_despesas_usuario_mes_atual_sintetico(usuario_id)
+
+@app.route('/ultimas_rendimentos_usuario_mes_atual_sintetico', methods=['POST'])
+def ultimas_rendimentos_usuario_mes_atual_sintetico():
+    usuario_id = request.json['id_usuario'].lower()
+    return funcoes.ultimas_rendimentos_usuario_mes_atual_sintetico(usuario_id)
 
 @app.route('/gastos_categoria_usuario', methods=['POST'])
 def gastos_categoria_usuario():
@@ -99,11 +110,24 @@ def gastos_categoria_usuario():
     dias = request.json['dias']
     return funcoes.gastos_categoria_usuario(usuario_id,dias)
 
+@app.route('/rendimentos_categoria_usuario', methods=['POST'])
+def rendimentos_categoria_usuario():
+    usuario_id = request.json['id_usuario'].lower()
+    dias = request.json['dias']
+    return funcoes.rendimentos_categoria_usuario(usuario_id,dias)
+
 @app.route('/soma_total_gastos_por_usuario_por_dia', methods=['POST'])
 def soma_total_gastos_por_usuario_por_dia():
     usuario_id = request.json['id_usuario'].lower()
     dias = request.json['dias']
     return funcoes.soma_total_gastos_por_usuario_por_dia(usuario_id,dias)
+
+@app.route('/soma_total_rendimentos_por_usuario_por_dia', methods=['POST'])
+def soma_total_rendimentos_por_usuario_por_dia():
+    usuario_id = request.json['id_usuario'].lower()
+    dias = request.json['dias']
+    return funcoes.soma_total_rendimentos_por_usuario_por_dia(usuario_id,dias)
+
 #endregion
     
 #region Cadastro de valores
@@ -112,6 +136,12 @@ def cadastro_gastos_usuario():
     usuario_id = request.json['id_usuario'].lower()
     registros_gastos = request.json['gastos']
     return funcoes.cadastro_gastos_usuario(registros_gastos,usuario_id)
+
+@app.route('/cadastro_rendimentos_usuario', methods=['POST'])
+def cadastro_rendimentos_usuario():
+    usuario_id = request.json['id_usuario'].lower()
+    registros_gastos = request.json['rendimentos']
+    return funcoes.cadastro_rendimentos_usuario(registros_gastos,usuario_id)
 
 #endregion
 

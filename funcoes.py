@@ -177,6 +177,22 @@ def cadastro_gastos_usuario(registros_gastos, usuario_id):
         
     return {'message': 'Gastos inseridos com sucesso!'}
     
+def cadastro_rendimentos_usuario(registros_gastos, usuario_id):
+    gastos = db.rendimentos    
+    data_hora_formatada = dataNow()
+    
+    for registro in registros_gastos:
+     
+        categoria_id = registro['id_categoria'].lower()
+        valor = registro['valor']
+        descricao = registro['descricao']
+        
+        novo_gasto = {'categoria_despesa_id': categoria_id, 'usuario_id': usuario_id, 'valor': valor, 'descricao': descricao, 'data': data_hora_formatada}
+
+        gasto_id = gastos.insert_one(novo_gasto)
+        
+    return {'message': 'Rendimentos inseridos com sucesso!'}
+
 def ultimas_despesas_usuario(dias, users_id):
     gastos = db.gastos.find({'usuario_id': users_id})    
     resultado = []
@@ -208,12 +224,56 @@ def ultimas_despesas_usuario(dias, users_id):
 
     return jsonify(lista_filtrada)
 
+def ultimas_rendimentos_usuario(dias, users_id):
+    gastos = db.rendimentos.find({'usuario_id': users_id})    
+    resultado = []
+    for gasto in gastos:
+        categoria_id = gasto['categoria_despesa_id']
+        categoria = db.categorias_rendimentos_geral.find_one({'_id': ObjectId(categoria_id)})
+        resultado.append({
+        'categoria': categoria['nome'],
+        'valor': gasto['valor'].replace(',', ''),
+        'data': gasto['data'],            
+        'descricao': gasto.get('descricao', '')
+        })
+    
+    if (dias==""):
+        dias = 0
+        data_atual = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+        data_limite = data_atual.strftime("%Y-%m-01 00:00:00")
+        data_limite = datetime.strptime(data_limite, '%Y-%m-%d %H:%M:%S')
+    else:
+        data_atual = datetime.now()
+        data_limite = datetime(data_atual.year, data_atual.month, data_atual.day, 0, 0, 0) - timedelta(days=int(dias))
+    
+    lista_filtrada = []
+
+    for item in resultado:
+        data_item = datetime.strptime(item['data'], '%Y-%m-%d %H:%M:%S')
+        if data_item >= data_limite:
+            lista_filtrada.append(item)
+
+    return jsonify(lista_filtrada)
+
 def ultimas_despesas_usuario_mes_atual_sintetico(users_id):
     gastos = db.gastos.find({'usuario_id': users_id})
     resultado = []
     for gasto in gastos:
         categoria_id = gasto['categoria_despesa_id']
         categoria = db.categorias_despesas_geral.find_one({'_id': ObjectId(categoria_id)})
+        resultado.append({
+            'categoria': categoria['nome'],
+            'valor': gasto['valor'].replace(',', '')            
+        })
+
+    return jsonify(resultado)
+
+def ultimas_rendimentos_usuario_mes_atual_sintetico(users_id):
+    gastos = db.rendimentos.find({'usuario_id': users_id})
+    resultado = []
+    for gasto in gastos:
+        categoria_id = gasto['categoria_despesa_id']
+        categoria = db.categorias_rendimentos_geral.find_one({'_id': ObjectId(categoria_id)})
         resultado.append({
             'categoria': categoria['nome'],
             'valor': gasto['valor'].replace(',', '')            
@@ -262,8 +322,81 @@ def gastos_categoria_usuario(usuario_id, dias):
     print(json_resultados)
     return json_resultados
 
+def rendimentos_categoria_usuario(usuario_id, dias):
+    collection_gastos = db['rendimentos']
+    collection_categorias = db['categorias_rendimentos_geral']
+
+    if (dias == ""):
+        dias = 0
+        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+        data_inicio_formatada = data_inicio.strftime("%Y-%m-01 00:00:00")
+    else:
+        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+        data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
+
+    query = {
+        'usuario_id': usuario_id,
+        'data': {'$gte': data_inicio_formatada}
+    }
+
+    result = collection_gastos.aggregate([
+        {'$match': query},
+        {'$group': {'_id': '$categoria_despesa_id', 'total': {'$sum': {'$toInt': '$valor'}}}}
+    ])
+
+    soma_gastos_por_categoria = {}
+    for categoria in result:
+        categoria_id = categoria['_id']
+        total = categoria['total']
+        nome_categoria = collection_categorias.find_one({'_id': ObjectId(categoria_id)})['nome']
+        soma_gastos_por_categoria[nome_categoria] = total
+
+    # Construindo o dicionário de resultados
+    resultados = {}
+    for categoria, total in soma_gastos_por_categoria.items():
+        resultados[categoria] = total
+
+    # Convertendo para JSON
+    json_resultados = jsonify(resultados)
+
+    # Exibindo o resultado JSON
+    print(json_resultados)
+    return json_resultados
+
 def soma_total_gastos_por_usuario_por_dia(usuario_id, dias):
     collection = db['gastos']
+
+    if (dias == ""):
+        dias = 0
+        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+        data_inicio_formatada = data_inicio.strftime("%Y-%m-01 00:00:00")
+    else:
+        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+        data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
+
+    query = {
+        'usuario_id': usuario_id,
+        'data': {'$gte': data_inicio_formatada}
+    }
+    
+    # Executando a consulta e calculando a soma dos gastos
+    result = collection.aggregate([
+        {'$match': query},
+        {'$group': {'_id': None, 'total': {'$sum': {'$toInt': '$valor'}}}}
+    ])
+
+    # Obtendo o resultado da soma
+    soma_gastos = next(result, {'total': 0})['total']
+
+    data = {
+    "Total": soma_gastos
+    }
+    
+    json_data = jsonify(data)
+    return json_data
+
+def soma_total_rendimentos_por_usuario_por_dia(usuario_id, dias):
+    collection = db['rendimentos']
 
     if (dias == ""):
         dias = 0
