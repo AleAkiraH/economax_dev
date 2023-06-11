@@ -365,13 +365,15 @@ def rendimentos_categoria_usuario(usuario_id, dias):
 
 def soma_total_gastos_por_usuario_por_dia(usuario_id, dias):
     collection = db['gastos']
-
+    data_hora_formatada = dataNow()
+    data_hora_formatada = datetime.strptime(data_hora_formatada, '%Y-%m-%d %H:%M:%S')
+    
     if (dias == ""):
         dias = 0
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+        data_inicio = (data_hora_formatada - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
         data_inicio_formatada = data_inicio.strftime("%Y-%m-01 00:00:00")
     else:
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+        data_inicio = (data_hora_formatada - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
         data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
 
     query = {

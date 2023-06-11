@@ -5,12 +5,15 @@ from flask_socketio import SocketIO
 import logging
 import AleCrypt
 import funcoes
+from flask_cors import CORS
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 app = Flask(__name__)
 socketio = SocketIO(app)
+
+CORS(app)
 
 @app.route('/', methods=['GET'])
 def home():
