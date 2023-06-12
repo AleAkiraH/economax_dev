@@ -4,6 +4,7 @@ from bson import ObjectId
 from datetime import datetime, timedelta
 import pytz
 import json
+import jwt
 
 client = pymongo.MongoClient("mongodb+srv://administrador:administrador@cluster0.8vjnvh9.mongodb.net/test")
 db = client['Economax']
@@ -14,7 +15,7 @@ def dataNow():
     data_hora_formatada = data_hora_atual_brasilia.strftime("%Y-%m-%d %H:%M:%S")
     return data_hora_formatada
 
-def cadastro(user_crypt, password_crypt):    
+def cadastro(user_login, user_crypt, password_crypt):    
     try:
         users = db.users
         if db.users.count_documents({'usuario': user_crypt, 'senha': password_crypt}) > 0:
@@ -26,16 +27,21 @@ def cadastro(user_crypt, password_crypt):
             }
             user_id = users.insert_one(usuario).inserted_id
             
-            return {'Message': 'Usuário cadastrado com sucesso!', 'id': str(user_id)}
+            payload = {'id_usuario': str(user_id), 'usuario': user_login}
+            jwt_token = jwt.encode(payload, "Economax", algorithm='HS256')
+            
+            return {'Message': 'Usuário cadastrado com sucesso!', 'jwt': jwt_token}
     except Exception as ex:
         return {'Message': 'Ocorreu um erro ao inserir o usuário!', 'Descrição': str(ex)}
 
-def login(username, password):
+def login(user_login, username, password):
     try:
         users = db.users
         user = users.find_one({'usuario': username})
         if user and user['senha'] == password:
-            return {'id_usuario': str(user['_id']),'Message': 'Usuário autenticado com sucesso!'}            
+            payload = {'id_usuario': str(user['_id']), 'usuario': user_login}
+            jwt_token = jwt.encode(payload, "Economax", algorithm='HS256')
+            return {'jwt': jwt_token,'Message': 'Usuário autenticado com sucesso!'}            
         else:
             return {'Message': 'Usuário ou senha incorretos!'}
     except Exception as ex:
