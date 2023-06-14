@@ -92,59 +92,69 @@ def busca_categorias_rendimentos_geral_usuario():
 #endregion
 
 #region Relatórios
+# arrumado
 @app.route('/ultimas_despesas_usuario', methods=['POST'])
 def ultimas_despesas_usuario():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
-    dias = request.json['dias']
-    return funcoes.ultimas_despesas_usuario(dias, usuario_id)
+    mes = request.json['mes']
+    ano = request.json['ano']
+    return funcoes.ultimas_despesas_usuario(mes, ano, usuario_id)
 
+# arrumado
 @app.route('/ultimas_rendimentos_usuario', methods=['POST'])
 def ultimas_rendimentos_usuario():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
-    dias = request.json['dias']
-    return funcoes.ultimas_rendimentos_usuario(dias, usuario_id)
-   
-@app.route('/ultimas_despesas_usuario_mes_atual_sintetico', methods=['POST'])
+    mes = request.json['mes']
+    ano = request.json['ano']
+    return funcoes.ultimas_rendimentos_usuario(mes, ano, usuario_id)
+
+# Rota morta mudada para ultimas_despesas_usuario
+@app.route('/ultimas_despesas_usuario_mes_atual_sintetsico', methods=['POST'])
 def ultimas_despesas_usuario_mes_atual_sintetico():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
     return funcoes.ultimas_despesas_usuario_mes_atual_sintetico(usuario_id)
 
-@app.route('/ultimas_rendimentos_usuario_mes_atual_sintetico', methods=['POST'])
+# Rota morta mudada para ultimas_rendimentos_usuario
+@app.route('/ultimas_rendimentos_usuario_mes_atual_sintesatico', methods=['POST'])
 def ultimas_rendimentos_usuario_mes_atual_sintetico():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
     return funcoes.ultimas_rendimentos_usuario_mes_atual_sintetico(usuario_id)
 
+# arrumado
 @app.route('/gastos_categoria_usuario', methods=['POST'])
 def gastos_categoria_usuario():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
-    dias = request.json['dias']
-    return funcoes.gastos_categoria_usuario(usuario_id,dias)
+    mes = request.json['mes']
+    ano = request.json['ano']
+    return funcoes.gastos_categoria_usuario(mes, ano, usuario_id)
 
+# arrumado
 @app.route('/rendimentos_categoria_usuario', methods=['POST'])
 def rendimentos_categoria_usuario():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
-    dias = request.json['dias']
-    return funcoes.rendimentos_categoria_usuario(usuario_id,dias)
+    mes = request.json['mes']
+    ano = request.json['ano']
+    return funcoes.rendimentos_categoria_usuario(mes, ano, usuario_id)
 
+# arrumado
 @app.route('/soma_total_gastos_por_usuario_por_dia', methods=['POST'])
 def soma_total_gastos_por_usuario_por_dia():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
-    dias = request.json['dias']
-    return funcoes.soma_total_gastos_por_usuario_por_dia(usuario_id,dias)
+    return funcoes.soma_total_gastos_por_usuario_por_dia(usuario_id)
 
+# arrumado
 @app.route('/soma_total_rendimentos_por_usuario_por_dia', methods=['POST'])
 def soma_total_rendimentos_por_usuario_por_dia():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
-    dias = request.json['dias']
-    return funcoes.soma_total_rendimentos_por_usuario_por_dia(usuario_id,dias)
+    return funcoes.soma_total_rendimentos_por_usuario_por_dia(usuario_id)
 
 #endregion
     
@@ -163,6 +173,14 @@ def cadastro_rendimentos_usuario():
     registros_gastos = request.json['rendimentos']
     return funcoes.cadastro_rendimentos_usuario(registros_gastos,usuario_id)
 
+#endregion
+
+#region Cadastro feedback
+@app.route('/cadastro_feedback', methods=['POST'])
+def cadastro_feedback():
+    email = request.json['email']
+    feedback = request.json['feedback']
+    return funcoes.cadastro_feedback(feedback, email)
 #endregion
 
 if __name__ == '__main__':

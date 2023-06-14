@@ -6,8 +6,17 @@ import pytz
 import json
 import jwt
 
-client = pymongo.MongoClient("mongodb+srv://administrador:administrador@cluster0.8vjnvh9.mongodb.net/test")
+client = pymongo.MongoClient("mongodb+srv://administrador:administrador@economax.wa1uot6.mongodb.net/test")
 db = client['Economax']
+
+def get_inicio_fim_mes(ano, mes):
+    if ano % 4 == 0 and (ano % 100 != 0 or ano % 400 == 0):
+        dias_mes = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    else:
+        dias_mes = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    inicio_mes = datetime(ano, mes, 1)
+    fim_mes = datetime(ano, mes, dias_mes[mes - 1], 23, 59, 59)
+    return inicio_mes, fim_mes
 
 def dataNow():
     fuso_horario_brasilia = pytz.timezone('America/Sao_Paulo')
@@ -199,8 +208,18 @@ def cadastro_rendimentos_usuario(registros_gastos, usuario_id):
         
     return {'message': 'Rendimentos inseridos com sucesso!'}
 
-def ultimas_despesas_usuario(dias, users_id):
-    gastos = db.gastos.find({'usuario_id': users_id})    
+def ultimas_despesas_usuario(mes, ano, users_id):
+    inicio_mes, fim_mes = get_inicio_fim_mes(ano, mes)
+    query = {
+    'data': {
+        '$gte': inicio_mes.strftime("%Y-%m-%d %H:%M:%S"),
+        '$lte': fim_mes.strftime("%Y-%m-%d %H:%M:%S")
+    },
+    'usuario_id': users_id
+    }
+    result = db.gastos.find(query)
+    gastos = sorted(result, key=lambda x: datetime.strptime(x['data'], "%Y-%m-%d %H:%M:%S"), reverse=True)
+    
     resultado = []
     for gasto in gastos:
         categoria_id = gasto['categoria_despesa_id']
@@ -211,55 +230,48 @@ def ultimas_despesas_usuario(dias, users_id):
         'data': gasto['data'],            
         'descricao': gasto.get('descricao', '')
         })
+    # dias = 30000
+    # if (dias==""):
+    #     dias = 30000
+    #     data_atual = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
+    #     data_limite = data_atual.strftime("%Y-%m-01 00:00:00")
+    #     data_limite = datetime.strptime(data_limite, '%Y-%m-%d %H:%M:%S')
+    # else:
+    #     data_atual = datetime.now()
+    #     data_limite = datetime(data_atual.year, data_atual.month, data_atual.day, 0, 0, 0) - timedelta(days=int(dias))
     
-    if (dias==""):
-        dias = 0
-        data_atual = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_limite = data_atual.strftime("%Y-%m-01 00:00:00")
-        data_limite = datetime.strptime(data_limite, '%Y-%m-%d %H:%M:%S')
-    else:
-        data_atual = datetime.now()
-        data_limite = datetime(data_atual.year, data_atual.month, data_atual.day, 0, 0, 0) - timedelta(days=int(dias))
-    
-    lista_filtrada = []
+    # lista_filtrada = []
 
-    for item in resultado:
-        data_item = datetime.strptime(item['data'], '%Y-%m-%d %H:%M:%S')
-        if data_item >= data_limite:
-            lista_filtrada.append(item)
+    # for item in resultado:
+    #     data_item = datetime.strptime(item['data'], '%Y-%m-%d %H:%M:%S')
+    #     if data_item >= data_limite:
+    #         lista_filtrada.append(item)
 
-    return jsonify(lista_filtrada)
+    return jsonify(resultado)
 
-def ultimas_rendimentos_usuario(dias, users_id):
-    gastos = db.rendimentos.find({'usuario_id': users_id})    
+def ultimas_rendimentos_usuario(mes, ano, users_id):
+    inicio_mes, fim_mes = get_inicio_fim_mes(ano, mes)
+    query = {
+    'data': {
+        '$gte': inicio_mes.strftime("%Y-%m-%d %H:%M:%S"),
+        '$lte': fim_mes.strftime("%Y-%m-%d %H:%M:%S")
+    },
+    'usuario_id': users_id
+    }
+    result = db.rendimentos.find(query)
+    rendimentos = sorted(result, key=lambda x: datetime.strptime(x['data'], "%Y-%m-%d %H:%M:%S"), reverse=True)
     resultado = []
-    for gasto in gastos:
-        categoria_id = gasto['categoria_despesa_id']
+    for rendimento in rendimentos:
+        categoria_id = rendimento['categoria_despesa_id']
         categoria = db.categorias_rendimentos_geral.find_one({'_id': ObjectId(categoria_id)})
         resultado.append({
         'categoria': categoria['nome'],
-        'valor': gasto['valor'].replace(',', ''),
-        'data': gasto['data'],            
-        'descricao': gasto.get('descricao', '')
-        })
+        'valor': rendimento['valor'].replace(',', ''),
+        'data': rendimento['data'],            
+        'descricao': rendimento.get('descricao', '')
+        })   
     
-    if (dias==""):
-        dias = 0
-        data_atual = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_limite = data_atual.strftime("%Y-%m-01 00:00:00")
-        data_limite = datetime.strptime(data_limite, '%Y-%m-%d %H:%M:%S')
-    else:
-        data_atual = datetime.now()
-        data_limite = datetime(data_atual.year, data_atual.month, data_atual.day, 0, 0, 0) - timedelta(days=int(dias))
-    
-    lista_filtrada = []
-
-    for item in resultado:
-        data_item = datetime.strptime(item['data'], '%Y-%m-%d %H:%M:%S')
-        if data_item >= data_limite:
-            lista_filtrada.append(item)
-
-    return jsonify(lista_filtrada)
+    return jsonify(resultado)
 
 def ultimas_despesas_usuario_mes_atual_sintetico(users_id):
     gastos = db.gastos.find({'usuario_id': users_id})
@@ -287,21 +299,15 @@ def ultimas_rendimentos_usuario_mes_atual_sintetico(users_id):
 
     return jsonify(resultado)
 
-def gastos_categoria_usuario(usuario_id, dias):
+def gastos_categoria_usuario(mes, ano, usuario_id):
+    inicio_mes, fim_mes = get_inicio_fim_mes(ano, mes)
+    
     collection_gastos = db['gastos']
     collection_categorias = db['categorias_despesas_geral']
 
-    if (dias == ""):
-        dias = 0
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-01 00:00:00")
-    else:
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
-
     query = {
         'usuario_id': usuario_id,
-        'data': {'$gte': data_inicio_formatada}
+        'data': {'$gte': inicio_mes.strftime("%Y-%m-%d %H:%M:%S")}
     }
 
     result = collection_gastos.aggregate([
@@ -328,21 +334,15 @@ def gastos_categoria_usuario(usuario_id, dias):
     print(json_resultados)
     return json_resultados
 
-def rendimentos_categoria_usuario(usuario_id, dias):
+def rendimentos_categoria_usuario(mes, ano, usuario_id):
+    inicio_mes, fim_mes = get_inicio_fim_mes(ano, mes)
+    
     collection_gastos = db['rendimentos']
     collection_categorias = db['categorias_rendimentos_geral']
 
-    if (dias == ""):
-        dias = 0
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-01 00:00:00")
-    else:
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
-
     query = {
         'usuario_id': usuario_id,
-        'data': {'$gte': data_inicio_formatada}
+        'data': {'$gte': inicio_mes.strftime("%Y-%m-%d %H:%M:%S")}
     }
 
     result = collection_gastos.aggregate([
@@ -369,18 +369,13 @@ def rendimentos_categoria_usuario(usuario_id, dias):
     print(json_resultados)
     return json_resultados
 
-def soma_total_gastos_por_usuario_por_dia(usuario_id, dias):
+def soma_total_gastos_por_usuario_por_dia(usuario_id):
     collection = db['gastos']
     data_hora_formatada = dataNow()
     data_hora_formatada = datetime.strptime(data_hora_formatada, '%Y-%m-%d %H:%M:%S')
     
-    if (dias == ""):
-        dias = 0
-        data_inicio = (data_hora_formatada - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-01 00:00:00")
-    else:
-        data_inicio = (data_hora_formatada - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
+    data_inicio = (data_hora_formatada - timedelta(days=int(0))).replace(hour=0, minute=0, second=0)
+    data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
 
     query = {
         'usuario_id': usuario_id,
@@ -403,16 +398,11 @@ def soma_total_gastos_por_usuario_por_dia(usuario_id, dias):
     json_data = jsonify(data)
     return json_data
 
-def soma_total_rendimentos_por_usuario_por_dia(usuario_id, dias):
+def soma_total_rendimentos_por_usuario_por_dia(usuario_id):
     collection = db['rendimentos']
 
-    if (dias == ""):
-        dias = 0
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-01 00:00:00")
-    else:
-        data_inicio = (datetime.now() - timedelta(days=int(dias))).replace(hour=0, minute=0, second=0)
-        data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
+    data_inicio = (datetime.now() - timedelta(days=int(0))).replace(hour=0, minute=0, second=0)
+    data_inicio_formatada = data_inicio.strftime("%Y-%m-%d %H:%M:%S")
 
     query = {
         'usuario_id': usuario_id,
@@ -435,24 +425,13 @@ def soma_total_rendimentos_por_usuario_por_dia(usuario_id, dias):
     json_data = jsonify(data)
     return json_data
 
-# a = cadastro("Alexsander","1234")
-# print(a)
-# b = login("jheTeste","1234")
-# print(b)
-# c = cadastro_categorias("Uber",str(b['id_usuario']))
-# print(c)
-# try:
-#     d = cadastro_categorias_usuario(str(b['id_usuario']),[str(c['id'])])
-#     print(d)
-# except:
-#     pass
-# try:
-#     e = cadastro_gastos_usuario(str(c['id']),str(b['id_usuario']),"40,00",datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
-#     print(e)
-# except:
-#     e = cadastro_gastos_usuario("6452bdf124f58c5f5ed55b89",str(b['id_usuario']),"40,00",datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
-#     print(e)
-# f = ultimas_despesas_usuario(1,str(b['id_usuario']))
-# print(f)
-# g = ultimas_despesas_usuario_mes_atual_sintetico(str(b['id_usuario']))
-# print(g)
+def cadastro_feedback(feedback, email):    
+    try:
+        feedbacks = db.feedback
+        feedback_id = feedbacks.insert_one({
+            "email": email,
+            "feedback": feedback
+        }).inserted_id
+        return {'Message': 'feedback recebido com sucesso!', 'Id_feedback': str(feedback_id)}
+    except Exception as ex:
+        return {'Message': 'Ocorreu um erro ao enviar o feedback!', 'Descrição': str(ex)}
