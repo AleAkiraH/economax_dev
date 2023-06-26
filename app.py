@@ -155,7 +155,6 @@ def soma_total_rendimentos_por_usuario_por_dia():
     payload = jwt.decode(request.json['jwt'], 'Economax', algorithms=['HS256'])
     usuario_id = payload['id_usuario']
     return funcoes.soma_total_rendimentos_por_usuario_por_dia(usuario_id)
-
 #endregion
     
 #region Cadastro de valores

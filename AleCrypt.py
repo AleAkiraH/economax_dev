@@ -16,7 +16,6 @@ def ale_encrypt(message, key):
         encrypted_message += encrypted_char
     return encrypted_message
 
-
 def ale_decrypt(encrypted_message, key):
     decrypted_message = ""
     numLetter = 0
@@ -33,3 +32,8 @@ def ale_decrypt(encrypted_message, key):
             decrypted_char = char
         decrypted_message += decrypted_char
     return decrypted_message
+
+result = ale_encrypt('aleakirah','aleakirah')
+print(result)
+result2 = ale_decrypt(result,'aleakirah')
+print(result2)

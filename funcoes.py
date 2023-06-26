@@ -6,7 +6,7 @@ import pytz
 import json
 import jwt
 
-client = pymongo.MongoClient("mongodb+srv://administrador:administrador@economax.wa1uot6.mongodb.net/test")
+client = pymongo.MongoClient("mongodb+srv://administrador:administrador@cluster0.8vjnvh9.mongodb.net/?retryWrites=true&w=majority")
 db = client['Economax']
 
 def get_inicio_fim_mes(ano, mes):
